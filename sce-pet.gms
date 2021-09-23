@@ -39,9 +39,9 @@ set
 componentsM(j) //
 componentsL(j) //
 ComponentsS(j) //
-component_combinations_MS(i,j) //
-component_combinations_ML(i,j) //
-component_combinations_MI(i,j) //;
+component_combinations_MS(i,j) /#componentsM.#componentsS/
+component_combinations_ML(i,j) /#componentsM.#componentsL/
+component_combinations_MI(i,j) /#componentsM.#componentsI/;
 
 
 variable
@@ -75,4 +75,72 @@ eqLCC.. lcc=e=g('');
 
 *fractional programming
 
+* multi-objective optimization
   
+
+parameter gwpC,costC,thetaC;
+
+$if not set gwpC $set gwpC -1;
+gwpC=%gwpC%;
+equation addCons1;
+addCons1$(gwpC>0).. gwp=l=gwpC;
+
+$if not set costC $set costC -1;
+costC=%costC%;
+equation addCons2;
+addCons2$(costC>0).. lcc=l=costC;
+
+$if not set thetaC $set thetaC -1;
+thetaC=%thetaC%;
+equation addCons3;
+addCons3$(thetaC>0).. theta=g=thetaC;
+
+
+
+Model SCE_Prob /ALL/;
+Option NLP=BARON;
+
+*$onecho > baron.opt
+*DoLocal 0
+*NumLoc 0
+*$offecho
+
+
+parameter zD,zG,zC;
+If(thetaC<0, Solve SCE_Prob Using NLP maximizing theta; 
+zD = theta.l;
+theta.lo=zD;
+zG = gwp.l;
+gwp.l=zG;
+Solve SCE_Prob Using NLP minimizing gwp;
+zG = gwp.l;
+gwp.up=zG;
+Solve SCE_Prob Using NLP minimizing lcc;
+zC=cost.l;
+cost.up=zC;
+
+Elseif (gwpC<0), Solve SCE_Prob Using NLP minimizing gwp;
+zG = gwp.l;
+gwp.up=zG;
+*Solve SCE_Prob Using NLP minimizing lcc;
+zC=lcc.l;
+lcc.up=zC;
+*Solve SCE_Prob Using NLP maximizing theta;
+zD = theta.l;
+theta.fx=zD;
+
+else  Solve SCE_Prob Using NLP minimizing lcc;
+zC = lcc.l;
+lcc.up=zC;
+*Solve SCE_Prob Using NLP maximizing theta;
+zD = theta.l;
+theta.lo=zD;
+*Solve SCE_Prob Using NLP minimizing gwp;
+zG=gwp.l;
+gwp.fx=zG;
+);
+
+
+
+
+
